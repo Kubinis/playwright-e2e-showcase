@@ -6,19 +6,26 @@ on:
   pull_request:
   workflow_dispatch:
   schedule:
-    # The target is a live third-party demo instance; a nightly run tells us the
-    # suite broke because the site changed, not because someone pushed code.
     - cron: '0 6 * * *'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# CI runs against an application the pipeline boots itself (docker-compose.ci.yml).
+# The public demo instance is behind Cloudflare, which challenges datacentre IPs:
+# browser traffic from GitHub-hosted runners gets a 403 and the app's XHR calls fail
+# silently, so a suite pointed at it would be red for reasons that have nothing to do
+# with the code. Local runs still default to the public instance.
+env:
+  UI_BASE_URL: http://localhost:4200
+  API_BASE_URL: http://localhost:8091
+
 jobs:
   api:
     name: API tests
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -26,6 +33,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - uses: ./.github/actions/app-stack
       - run: npx playwright test --project=api
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
@@ -37,7 +45,7 @@ jobs:
   ui:
     name: UI (${{ matrix.project }})
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 35
     strategy:
       fail-fast: false
       matrix:
@@ -51,6 +59,7 @@ jobs:
       - run: npm ci
       - name: Install browser
         run: npx playwright install --with-deps ${{ matrix.project }}
+      - uses: ./.github/actions/app-stack
       - run: npx playwright test --project=${{ matrix.project }}
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
@@ -64,14 +73,7 @@ jobs:
   visual:
     name: Visual regression
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    # Pinned to the official image so screenshots are rendered by the same fonts
-    # and the same browser build every time — the only way pixel baselines stay
-    # meaningful across machines. The image tag and the @playwright/test version in
-    # package.json must move together: a caret range silently upgrades the package
-    # past the browsers baked into the image, and every test fails to launch.
-    container:
-      image: mcr.microsoft.com/playwright:v1.62.1-noble
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -79,8 +81,11 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      # Baselines are per-platform. Missing ones are written and uploaded for a
-      # human to review and commit; existing ones are compared as usual.
+      - name: Install browser
+        run: npx playwright install --with-deps chromium
+      - uses: ./.github/actions/app-stack
+      # Baselines are per-platform. Missing ones are written and uploaded for review
+      # rather than failing the job; committed ones are compared as usual.
       - run: npx playwright test --project=visual --update-snapshots=missing
       - name: Upload snapshots and diffs
         uses: actions/upload-artifact@v4

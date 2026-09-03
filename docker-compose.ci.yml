@@ -1,0 +1,58 @@
+# The public demo instance sits behind Cloudflare, which challenges datacentre IPs —
+# browser traffic from GitHub-hosted runners gets a 403 and the app's XHR calls fail.
+# CI therefore boots its own copy of the same application from the official images,
+# so the suite tests a real backend instead of depending on a third party staying
+# reachable. Local runs still point at the public instance by default.
+services:
+  mariadb:
+    image: yobasystems/alpine-mariadb:10.6.11
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_USER: user
+      MYSQL_PASSWORD: root
+      MYSQL_DATABASE: toolshop
+    healthcheck:
+      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-uroot', '-proot']
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  laravel-api:
+    image: testsmith/practice-software-testing-sprint5-api
+    environment:
+      PHP_OPCACHE_VALIDATE_TIMESTAMPS: '1'
+      DB_PORT: '3306'
+      DB_HOST: mariadb
+      DB_DATABASE: toolshop
+      DB_USERNAME: root
+      DB_PASSWORD: root
+      host: localhost
+      DISABLE_LOGGING: 'true'
+    volumes:
+      - laravel-app-code:/var/www
+    depends_on:
+      mariadb:
+        condition: service_healthy
+
+  # Stock nginx instead of the project's own web image: that image is published
+  # for arm64 only and dies with "exec format error" on an amd64 runner.
+  web:
+    image: nginx:1.27-alpine
+    ports:
+      - '8091:80'
+    volumes:
+      - laravel-app-code:/var/www
+      - ./ci/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - laravel-api
+
+  angular-ui:
+    image: testsmith/practice-software-testing-sprint5-ui
+    ports:
+      - '4200:4200'
+    command: bash -c "ng serve --host 0.0.0.0 --port 4200 --disable-host-check"
+    depends_on:
+      - web
+
+volumes:
+  laravel-app-code:

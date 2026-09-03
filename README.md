@@ -87,7 +87,7 @@ Point it at another environment without touching code:
 UI_BASE_URL=https://staging.example.com API_BASE_URL=https://api.staging.example.com npm test
 ```
 
-## Two ways this suite tried to break itself
+## Three ways this suite tried to break itself
 
 Both were found by running it, not by reading about them — and both are the reason
 the fixtures look the way they do.
@@ -104,6 +104,27 @@ it down for every user of the site, this suite included. Now each worker registe
 own account through the API, and each negative test gets a separate disposable one, so
 the lockout has nowhere to spread. On a client project this is the difference between a
 CI run and a support ticket.
+
+**The public demo answers CI with a Cloudflare challenge.** Every state-dependent
+test went red on GitHub-hosted runners while passing locally. Measuring instead of
+guessing found it in one request:
+
+```
+GET https://practicesoftwaretesting.com/  ->  HTTP/2 403
+cf-mitigated: challenge
+server: cloudflare
+```
+
+The API lives on a separate host without Cloudflare, which is why API tests stayed
+green while the browser ones lost their cart and their session — pages rendered, but
+the app's XHR calls died under the challenge. Working around someone else's WAF is not
+an option I would ship, so CI now boots its own copy of the application
+(`docker-compose.ci.yml`) from the project's published images and points the suite at
+localhost. Local runs still default to the public instance.
+
+A detail worth keeping: the upstream web image is published for arm64 only and dies
+with `exec format error` on amd64 runners, so a stock `nginx:alpine` serves Laravel's
+`public/` over php-fpm in its place.
 
 ## Design decisions worth stating
 
@@ -133,25 +154,27 @@ content change and gets muted within a week. Header, product card, product detai
 contact form and cart table are stable surfaces where a diff usually means a real
 regression. Animated and time-dependent elements are masked, not waited out.
 
-**Baselines are per platform.** Screenshots committed here are `-win32`. CI runs the
-visual job inside `mcr.microsoft.com/playwright:v1.62.1-noble` so Linux baselines are
-rendered by identical fonts and browser build; missing ones are written and uploaded as
-an artifact for review rather than failing the job.
+**Baselines are per platform.** Both `-win32` (local) and `-linux` (CI) files live in
+the repo; Playwright picks the right one automatically. Missing baselines are written
+and uploaded as an artifact for review rather than failing the job.
 
 ## CI
 
 `.github/workflows/e2e.yml` — on push, PR, manual dispatch, and nightly at 06:00 UTC.
-The nightly run matters here: the target is a live third-party site, so a scheduled
-failure tells us the *site* changed, not the code.
+
+Every job first runs the `app-stack` composite action: it boots MariaDB, the Laravel
+API, nginx and the Angular UI, seeds the database, and blocks until both the API and
+the UI actually answer. Tests only start once the app is real — no fixed sleeps.
 
 | Job | What it does |
 |---|---|
-| `api` | 12 API tests, no browser, ~3 s |
+| `api` | 12 API tests, no browser |
 | `ui` | Matrix: chromium / firefox / webkit, `fail-fast: false` |
-| `visual` | Pinned Playwright container, `--update-snapshots=missing` |
+| `visual` | `--update-snapshots=missing` — writes missing baselines, compares the committed ones |
 
 Every job uploads its HTML report; failures carry a trace (`npx playwright show-trace`),
-screenshot and video.
+screenshot and video. Baselines are per platform: the `-linux` files are what CI
+compares against, the `-win32` ones come from local runs.
 
 ## Not in scope
 

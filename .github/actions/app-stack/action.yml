@@ -1,0 +1,42 @@
+name: Application stack
+description: >
+  Boots the Toolshop application (MariaDB, Laravel API, nginx, Angular UI), seeds the
+  database and waits until both the API and the UI answer. Every CI job that needs a
+  running app uses this instead of the public demo instance.
+
+runs:
+  using: composite
+  steps:
+    - name: Boot containers
+      shell: bash
+      run: docker compose -f docker-compose.ci.yml up -d
+
+    - name: Seed the database
+      shell: bash
+      run: |
+        docker compose -f docker-compose.ci.yml exec -T laravel-api php artisan key:generate --force || true
+        docker compose -f docker-compose.ci.yml exec -T laravel-api php artisan migrate:refresh --seed --force
+
+    - name: Wait for the API
+      shell: bash
+      run: |
+        for i in $(seq 1 40); do
+          code=$(curl -s -o /tmp/api.json -w '%{http_code}' http://localhost:8091/products || true)
+          if [ "$code" = "200" ]; then echo "API ready after ${i} attempt(s)"; exit 0; fi
+          sleep 5
+        done
+        echo "::error::API never became reachable"
+        docker compose -f docker-compose.ci.yml logs --tail=60
+        exit 1
+
+    - name: Wait for the UI
+      shell: bash
+      run: |
+        for i in $(seq 1 60); do
+          code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:4200/ || true)
+          if [ "$code" = "200" ]; then echo "UI ready after ${i} attempt(s)"; exit 0; fi
+          sleep 5
+        done
+        echo "::error::UI never became reachable"
+        docker compose -f docker-compose.ci.yml logs --tail=60 angular-ui
+        exit 1
