@@ -67,9 +67,11 @@ jobs:
     timeout-minutes: 15
     # Pinned to the official image so screenshots are rendered by the same fonts
     # and the same browser build every time — the only way pixel baselines stay
-    # meaningful across machines.
+    # meaningful across machines. The image tag and the @playwright/test version in
+    # package.json must move together: a caret range silently upgrades the package
+    # past the browsers baked into the image, and every test fails to launch.
     container:
-      image: mcr.microsoft.com/playwright:v1.58.2-noble
+      image: mcr.microsoft.com/playwright:v1.62.1-noble
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

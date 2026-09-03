@@ -1,7 +1,7 @@
 # Playwright E2E Showcase — UI, API and Visual Regression
 
 [![E2E](https://github.com/Kubinis/playwright-e2e-showcase/actions/workflows/e2e.yml/badge.svg)](https://github.com/Kubinis/playwright-e2e-showcase/actions/workflows/e2e.yml)
-[![Playwright](https://img.shields.io/badge/Playwright-1.58-2EAD33?logo=playwright&logoColor=white)](https://playwright.dev)
+[![Playwright](https://img.shields.io/badge/Playwright-1.62-2EAD33?logo=playwright&logoColor=white)](https://playwright.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 
 An end-to-end suite against [practicesoftwaretesting.com](https://practicesoftwaretesting.com)
@@ -134,7 +134,7 @@ contact form and cart table are stable surfaces where a diff usually means a rea
 regression. Animated and time-dependent elements are masked, not waited out.
 
 **Baselines are per platform.** Screenshots committed here are `-win32`. CI runs the
-visual job inside `mcr.microsoft.com/playwright:v1.58.2-noble` so Linux baselines are
+visual job inside `mcr.microsoft.com/playwright:v1.62.1-noble` so Linux baselines are
 rendered by identical fonts and browser build; missing ones are written and uploaded as
 an artifact for review rather than failing the job.
 
