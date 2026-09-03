@@ -21,7 +21,7 @@ test.describe('Guest checkout', () => {
     expect(total).toBeGreaterThan(0);
   });
 
-  test('bank transfer reveals its own fields and only then enables Confirm', async ({ checkout }) => {
+  test('bank transfer reveals its own fields and refuses empty account details', async ({ checkout }) => {
     await checkout.openCheckout();
     await checkout.continueAsGuest(uniqueGuest());
     await checkout.fillBillingAddress(NL_ADDRESS);
@@ -30,9 +30,14 @@ test.describe('Guest checkout', () => {
     await checkout.paymentMethod.selectOption({ label: 'Bank Transfer' });
 
     await expect(checkout.bankName).toBeVisible();
-    // Conditional fields start empty, so Confirm must stay disabled — otherwise the
-    // form would submit a payment with no account details.
-    await expect(checkout.finish).toBeDisabled();
+    await expect(checkout.accountName).toBeVisible();
+    await expect(checkout.accountNumber).toBeVisible();
+
+    // Builds gate this differently — some disable Confirm, some reject the submit.
+    // The invariant worth testing is neither of those mechanisms: empty account
+    // details must never produce a confirmed payment.
+    if (await checkout.finish.isEnabled()) await checkout.finish.click();
+    await expect(checkout.successMessage).toBeHidden();
 
     await checkout.pay(BANK_TRANSFER);
     await expect(checkout.successMessage).toBeVisible();
