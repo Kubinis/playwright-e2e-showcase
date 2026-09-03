@@ -1,6 +1,6 @@
 # Playwright E2E Showcase — UI, API and Visual Regression
 
-[![E2E](https://github.com/USERNAME/playwright-e2e-showcase/actions/workflows/e2e.yml/badge.svg)](https://github.com/USERNAME/playwright-e2e-showcase/actions/workflows/e2e.yml)
+[![E2E](https://github.com/Kubinis/playwright-e2e-showcase/actions/workflows/e2e.yml/badge.svg)](https://github.com/Kubinis/playwright-e2e-showcase/actions/workflows/e2e.yml)
 [![Playwright](https://img.shields.io/badge/Playwright-1.58-2EAD33?logo=playwright&logoColor=white)](https://playwright.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 
