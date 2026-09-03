@@ -1,0 +1,21 @@
+{
+  "name": "playwright-e2e-showcase",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Playwright + TypeScript E2E, API and visual-regression suite against a public demo shop.",
+  "scripts": {
+    "test": "playwright test",
+    "test:ui": "playwright test --project=chromium --grep-invert @visual",
+    "test:api": "playwright test --project=api",
+    "test:visual": "playwright test --project=visual",
+    "test:headed": "playwright test --project=chromium --headed",
+    "report": "playwright show-report",
+    "codegen": "playwright codegen https://practicesoftwaretesting.com",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.58.2",
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.2"
+  }
+}
