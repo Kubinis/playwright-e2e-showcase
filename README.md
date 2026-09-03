@@ -155,8 +155,8 @@ contact form and cart table are stable surfaces where a diff usually means a rea
 regression. Animated and time-dependent elements are masked, not waited out.
 
 **Baselines are per platform.** Both `-win32` (local) and `-linux` (CI) files live in
-the repo; Playwright picks the right one automatically. Missing baselines are written
-and uploaded as an artifact for review rather than failing the job.
+the repo; Playwright picks the right one automatically. A missing baseline is written and uploaded as an artifact, and the job fails on
+purpose — a screenshot nobody looked at is not a baseline.
 
 ## CI
 
@@ -170,7 +170,7 @@ the UI actually answer. Tests only start once the app is real — no fixed sleep
 |---|---|
 | `api` | 12 API tests, no browser |
 | `ui` | Matrix: chromium / firefox / webkit, `fail-fast: false` |
-| `visual` | `--update-snapshots=missing` — writes missing baselines, compares the committed ones |
+| `visual` | Compares committed baselines; a missing one is written, uploaded and the job fails so nobody merges an unreviewed image |
 
 Every job uploads its HTML report; failures carry a trace (`npx playwright show-trace`),
 screenshot and video. Baselines are per platform: the `-linux` files are what CI

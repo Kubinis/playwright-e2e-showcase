@@ -1,3 +1,6 @@
+# Application version is pinned to 2.4 — the same build the public demo runs, so the
+# suite is not graded against a different app than the one it was written for.
+#
 # The public demo instance sits behind Cloudflare, which challenges datacentre IPs —
 # browser traffic from GitHub-hosted runners gets a 403 and the app's XHR calls fail.
 # CI therefore boots its own copy of the same application from the official images,
@@ -18,7 +21,7 @@ services:
       retries: 30
 
   laravel-api:
-    image: testsmith/practice-software-testing-sprint5-api
+    image: testsmith/practice-software-testing-sprint5-api:2.4
     environment:
       PHP_OPCACHE_VALIDATE_TIMESTAMPS: '1'
       DB_PORT: '3306'
@@ -47,7 +50,7 @@ services:
       - laravel-api
 
   angular-ui:
-    image: testsmith/practice-software-testing-sprint5-ui
+    image: testsmith/practice-software-testing-sprint5-ui:2.4
     ports:
       - '4200:4200'
     command: bash -c "ng serve --host 0.0.0.0 --port 4200 --disable-host-check"
